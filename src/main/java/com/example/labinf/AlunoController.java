@@ -19,8 +19,10 @@ public class AlunoController {
 
     private List<AlunoModel> todosAlunos;
     private ObservableList<String> turmas;
+    private AlunoModel aluno;
+
     private int registoAtual = -1;
-    private boolean novo = false, alteradoPorCodigo = true, alteradoPeloUtilizador = false;
+//    private boolean novo = false, alteradoPorCodigo = true, alteradoPeloUtilizador = false;
 
 
     @FXML
@@ -81,7 +83,6 @@ public class AlunoController {
         txtTurma.setText("");
         txtContacto.setText("");
         permiteNavegar(false);
-        novo = true;
     }
 
     private void permiteNavegar(boolean ativa){
@@ -101,34 +102,20 @@ public class AlunoController {
 
     @FXML
     void confirmaInserir(ActionEvent event) {
-        if (novo){
-            AlunoModel novoAluno = new AlunoModel();
-            novoAluno.setNumero(spNumero.getValue());
-            novoAluno.setNome(txtNome.getText());
-            novoAluno.setContacto(txtContacto.getText());
-            novoAluno.setTurma(txtTurma.getText());
-            alunoDAO.insereNaBD(novoAluno);
-            alunos.add(novoAluno);
-            novo = false;
-        }
-        else{
-            AlunoModel alunoAlterado = alunos.get(registoAtual);
-            alunoAlterado.setNumero(spNumero.getValue());
-            alunoAlterado.setNome(txtNome.getText());
-            alunoAlterado.setContacto(txtContacto.getText());
-            alunoAlterado.setTurma(txtTurma.getText());
-            alunoDAO.atualizaNaBD(alunoAlterado);
-            alunos.set(registoAtual, alunoAlterado);
-        }
+        AlunoModel novoAluno = new AlunoModel();
+        novoAluno.setNumero(spNumero.getValue());
+        novoAluno.setNome(txtNome.getText());
+        novoAluno.setContacto(txtContacto.getText());
+        novoAluno.setTurma(txtTurma.getText());
+        alunoDAO.insereNaBD(novoAluno);
+        alunos.add(novoAluno);
         permiteNavegar(true);
-        alteradoPeloUtilizador = false;
         mostraAluno();
     }
 
     @FXML
     void cancelaInserir(ActionEvent event) {
         permiteNavegar(true);
-        alteradoPeloUtilizador = false;
         mostraAluno();
     }
 
@@ -175,26 +162,16 @@ public class AlunoController {
     }
 
     private void mostraAluno() {
-        AlunoModel aluno = alunos.get(registoAtual);
-        alteradoPorCodigo = true;
+/*        AlunoModel aluno = alunos.get(registoAtual);
         spNumero.getValueFactory().setValue(aluno.getNumero());
         txtNome.setText(aluno.getNome());
         txtTurma.setText(aluno.getTurma());
         txtContacto.setText(aluno.getContacto());
-        alteradoPorCodigo = false;
-    }
+ */   }
 
     @FXML
     private void escolheTurma() {
-        String turmaSelecionada = lstTurma.getValue();
 
-        if ("Todas as Turmas".equals(turmaSelecionada)) {
-            // Se "Todas as Turmas" for selecionada, mostre todos os alunos
-            alunos.setAll(todosAlunos);
-        } else if (turmaSelecionada != null) {
-            // Filtrar alunos com base na turma selecionada
-            alunos.setAll(todosAlunos.stream().filtered(aluno -> turmaSelecionada.equals(aluno.getTurma())));
-        }
     }
 
     @FXML
@@ -208,24 +185,15 @@ public class AlunoController {
             registoAtual = 0;
             mostraAluno();
         }
-        List<String> listaTurmas = alunos.stream()  // Percorre a lista de alunos
-                .map(AlunoModel::getTurma) // obtem a turma de cada aluno
-                .distinct() // Remove duplicados, se houver
-                .collect(Collectors.toList()); // envia a turma para uma lista
-        listaTurmas.add("Todas as Turmas");  // Adicione a opção "Todas as Turmas" à lista de opções
 
-        turmas = FXCollections.observableArrayList(listaTurmas);
-        lstTurma.setItems(turmas);
-        addChangeListener(txtNome);
-        addChangeListener(txtTurma);
-        addChangeListener(txtContacto);
-        addspChangeListener(spNumero);
+        aluno = alunos.get(registoAtual);
 
-/*        addFocusChangeListener(txtNome,1);
-        addFocusChangeListener(txtTurma,2);
-        addFocusChangeListener(txtContacto, 3);
-        addFocusChangeListener(txtNumero,0);
-*/
+
+//        txtNumero.textProperty().bindBidirectional(alunoModel.numeroProperty(), new NumberStringConverter());
+        txtNome.textProperty().bindBidirectional(aluno.nomeProperty());
+        txtTurma.textProperty().bindBidirectional(aluno.turmaProperty());
+        txtContacto.textProperty().bindBidirectional(aluno.contactoProperty());
+
         TableColumn<AlunoModel, Integer> idColumn = new TableColumn<>("ID");
         idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
         TableColumn<AlunoModel, String> nomeColumn = new TableColumn<>("Nome");
@@ -252,41 +220,6 @@ public class AlunoController {
 
     }
 
-    private void addChangeListener(TextField textField) {
-        textField.textProperty().addListener((obs, oldValue, newValue) -> {
-            if (!alteradoPeloUtilizador) {
-                System.out.println(obs.getValue());
-                if (!alteradoPorCodigo) { // foi alterado pelo utilizador
-                    alteradoPeloUtilizador = true;
-                    permiteNavegar(false);
-                }
-                System.out.println(alteradoPorCodigo);
-            }
-        });
-    }
 
-    private void addspChangeListener(Spinner<Integer> spinner ) {
-        spinner.valueProperty().addListener((observable, oldValue, newValue) -> {
-            // This code block will be executed when the Spinner's value changes
-            int newNumber = newValue; // Get the new value of the Spinner
-            // You can now handle the new value as needed
-            System.out.println("Spinner value changed to: " + newNumber);
-        });
-    }
-
-
-/*    private void addFocusChangeListener(TextField textField, int indField) {
-
-        textField.focusedProperty().addListener((obs, oldFocus, newFocus) -> {
-            if (!newFocus) { // Focus is lost
-                System.out.println("controlo; " + textField.getText() + "  original; " + valorOriginal[indField]);
-                String newValue = textField.getText();
-                if (!newValue.equals(valorOriginal[indField])) { // Value has changed
-                    permiteNavegar(false);
-                }
-            }
-        });
-    }
-*/
 }
 
